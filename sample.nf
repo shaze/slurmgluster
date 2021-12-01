@@ -1,3 +1,4 @@
+// common code that must be included starts here
 
 def getNodesOfBricks(fname) {
   cmd = "getfattr -n glusterfs.pathinfo -e text ${fname}";
@@ -52,11 +53,21 @@ def nodeOption(fname,aggression=1,other="") {
   }
 }
 
+// common code ends
+
+// sample code that you should use as a template
+
+bams = Channel.fromFilePairs("$src/*{.bam,.bam.bai}", size:2)
+	      .map { [it[0],it[1][0], it[1][1], nodeOption(it[1][0])] }
+        .randomSample(1000)
+        
+
+
 
 
  process sample {
      input:
-        ...
+        tuple sample, file(bam), file(bai), val(cluster_opt) from bams
      output:
         ...   
      clusterOptions { cluster_opt }
