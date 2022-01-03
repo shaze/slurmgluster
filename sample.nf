@@ -1,5 +1,17 @@
 // common code that must be included starts here
 
+
+
+// This should be the files you want to use as determining the node allocations. Can contain other files (a small performance
+// penalty but only minor but should contain all that you want
+key_fnames = file("/external/diskC/build38/datasets/*/bam/*.bam")
+
+
+node_suggestion = [:]
+
+
+
+
 def getNodesOfBricks(fname) {
   cmd = "getfattr -n glusterfs.pathinfo -e text ${fname}";
   msg=cmd.execute().text;
@@ -17,6 +29,8 @@ def getNodesOfBricks(fname) {
   }
   return nodes
 }
+
+
 
 
 possible_states = ['idle','alloc','mix' ]
@@ -40,6 +54,8 @@ def getStatus(nodes) {
 }
 
 
+
+
 def nodeOption(fname,aggression=1,other="") {
   nodes = getNodesOfBricks(fname)
   state = getStatus(nodes)
@@ -53,21 +69,28 @@ def nodeOption(fname,aggression=1,other="") {
   }
 }
 
+key_fnames.each { node_suggestion[it.getName()]=nodeOption(it) }
+
+
+
 // common code ends
 
 // sample code that you should use as a template
 
 bams = Channel.fromFilePairs("$src/*{.bam,.bam.bai}", size:2)
-	      .map { [it[0],it[1][0], it[1][1], nodeOption(it[1][0])] }
+	      .map { [it[0],it[1][0], it[1][1]] }
         .randomSample(1000)
         
 
 
 
-
+// use the node_suggestion hash map to find where the process should run
+// NB: node_suggestion takes a string as an input type so we need to run .getName() on the input file
+// Recall that the file itself is not staged at the point clusterOptions is called
  process sample {
+     clusterOptions { node_suggestion[bam.getName()] }
      input:
-        tuple sample, file(bam), file(bai), val(cluster_opt) from bams
+        tuple sample, file(bam), file(bai) from bams
      output:
         ...   
-     clusterOptions { cluster_opt }
+

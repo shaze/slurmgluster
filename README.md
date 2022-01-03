@@ -29,6 +29,11 @@ Adapt the code marked `sample`. In this example we are processing a bunch of BAM
 
 So what we do is use `map` to take the data we normally get from `fromFilePairs` and add the node to which we should preferentially allocate the job that processes it and then passes that to the actual process.
 
+
+# Weaknesses
+
+The biggest weakness of this approach is that by making the cluster option a parameter of the input to the process, the `-resume` feature of Nextflow is messed up because when a process is resumed, the cluster option could be difference -- Nexflow takes this to imply that a process must be re-rerun.  Hence the next version of this code is preferred.
+
 Note a major weakness of this is that jobs are allocated based on the state of the cluster when the overall nextflow script first runs. Ideally this would be done dynamically when the process runs. Unfortunately it's not easy to do (there are ways but it makes the code more complicated). I try to mitigate this partially by radomising the order of files since there can be non-random allocation of files. In this example I use `randomSample(1000)` You should pick a number that is definitely greater than then number of files you will be processing -- doesn't have to be exact just bigger.
 
 
