@@ -13,6 +13,12 @@ However sometimes we may want to exploit the physical locality. Suppose you have
 
 The code below can be used in a Nextflow script to allocate jobs to the nodes which contain the a file of interest. This is done use the `clusterOptions` option, passing the node which would be used. One complication in this is that the node has to be passed as value to the process (see example below).
 
+
+# How it works
+
+In your Nextflow script you specify the files you want to use node allocation. The Groovy code here builds up a hash table that specifies for each file where a process for that file should run.  You can use `clusterOptions` and lookup in the hash table the value to pass.
+
+
 # Guidelines
 
 By default you should not use this code - it adds a layer of complication and also adds extra constraints on where jobs run. Gluster and slurm are pretty good. But you can consider using this if
@@ -27,12 +33,9 @@ Include the Groovy code marked `common code` into your script.
 
 Adapt the code marked `sample`. In this example we are processing a bunch of BAM files and their indexes. We want to allocate jobs to nodes based on locations of the BAM file (the index file may well be on a different node but as BAI files are so small that doesn't matter).
 
-So what we do is use `map` to take the data we normally get from `fromFilePairs` and add the node to which we should preferentially allocate the job that processes it and then passes that to the actual process.
 
 
 # Weaknesses
-
-The biggest weakness of this approach is that by making the cluster option a parameter of the input to the process, the `-resume` feature of Nextflow is messed up because when a process is resumed, the cluster option could be difference -- Nexflow takes this to imply that a process must be re-rerun.  Hence the next version of this code is preferred.
 
 Note a major weakness of this is that jobs are allocated based on the state of the cluster when the overall nextflow script first runs. Ideally this would be done dynamically when the process runs. Unfortunately it's not easy to do (there are ways but it makes the code more complicated). I try to mitigate this partially by radomising the order of files since there can be non-random allocation of files. In this example I use `randomSample(1000)` You should pick a number that is definitely greater than then number of files you will be processing -- doesn't have to be exact just bigger.
 
